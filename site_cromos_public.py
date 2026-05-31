@@ -8,9 +8,14 @@ import urllib.parse
 # 1. Configurar a página do website
 st.set_page_config(page_title="Mundial 2026", layout="wide")
 
-# Caminhos ajustados para o servidor do Streamlit (Nuvem)
-PASTA_IMAGENS = 'imagens'
-FICHEIRO_DB = 'mundial2026.db'
+# --- O TRUQUE DE PROGRAMADOR: CAMINHOS DINÂMICOS ---
+# 1. Descobre automaticamente qual é a pasta onde este ficheiro (.py) está guardado
+PASTA_BASE = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Cola o nome da pasta de imagens e da base de dados ao caminho que descobriu
+PASTA_IMAGENS = os.path.join(PASTA_BASE, 'imagens')
+FICHEIRO_DB = os.path.join(PASTA_BASE, 'mundial2026.db')
+
 
 def get_image_base64(caminho_imagem):
     with open(caminho_imagem, "rb") as image_file:
