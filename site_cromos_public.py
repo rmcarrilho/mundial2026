@@ -8,6 +8,7 @@ import urllib.parse
 # 1. Configurar a página do website
 st.set_page_config(page_title="Mundial 2026", layout="wide")
 
+# Caminhos ajustados para o servidor do Streamlit (Nuvem)
 PASTA_IMAGENS = 'imagens'
 FICHEIRO_DB = 'mundial2026.db'
 
@@ -111,11 +112,11 @@ else:
 
 
     # -------------------------------------------------------------------
-    # CSS GLOBAL E INJEÇÕES
+    # CSS GLOBAL E INJEÇÕES (Com design responsivo para telemóvel)
     # -------------------------------------------------------------------
     st.markdown("""
     <style>
-    /* CSS DO EXPLORADOR (Mantido) */
+    /* CSS DO EXPLORADOR */
     [data-testid="stButton"] { margin-bottom: -10px !important; }
     
     [data-testid="baseButton-tertiary"], [data-testid="stBaseButton-tertiary"], .stButton > button[kind="tertiary"] {
@@ -145,7 +146,7 @@ else:
         border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;
     }
     
-    /* CSS LINKS MÁGICOS (Mantido) */
+    /* CSS LINKS MÁGICOS */
     .link-magico {
         color: inherit !important; text-decoration: none !important; font-weight: inherit !important; cursor: pointer;
     }
@@ -157,10 +158,11 @@ else:
     def navegar_para_pais(pais_escolhido):
         st.session_state.modo_vista = "🌍 Seleção Nacional"
         st.session_state.selecao_escolhida = pais_escolhido
+        # st.rerun() REMOVIDO DAQUI PARA EVITAR O ERRO NA NUVEM!
 
 
     # ===================================================================
-    # ESTRUTURA COLUNAS PRINCIPAIS DO TOPO (Mantida Lado a Lado)
+    # ESTRUTURA COLUNAS PRINCIPAIS DO TOPO
     # ===================================================================
     left_main_content, right_logo_section = st.columns([10, 6]) 
 
@@ -222,25 +224,17 @@ else:
 
     with right_logo_section:
         # -------------------------------------------------------------------
-        # IMAGEM 9.PNG REDUZIDA EM 75% (max-height: 120px)
+        # IMAGEM 9.PNG
         # -------------------------------------------------------------------
         caminho_logo = os.path.join(PASTA_IMAGENS, '9.png')
         if os.path.exists(caminho_logo):
             logo_b64 = get_image_base64(caminho_logo)
             st.markdown(f"""
             <div style="
-                display: flex;
-                justify-content: flex-end; /* Mantém trancada à direita */
-                align-items: flex-start;
-                height: 100%;
-                margin-top: 15px;
-                padding-right: 20px;
+                display: flex; justify-content: flex-end; align-items: flex-start;
+                height: 100%; margin-top: 15px; padding-right: 20px;
             ">
-                <img src="{logo_b64}" style="
-                    max-height: 350px; /* Reduzido em 75% (para 25% do original de 480px) */
-                    width: auto;
-                    object-fit: contain;
-                ">
+                <img src="{logo_b64}" style="max-height: 120px; width: auto; object-fit: contain;">
             </div>
             """, unsafe_allow_html=True)
     # ===================================================================
@@ -261,7 +255,7 @@ else:
     st.write(f"A mostrar **{len(df_filtrado)}** jogadores em **{escolha_principal}** ({len(jogadores_com_foto)} com foto, {len(jogadores_sem_foto)} em falta)")
     
     # -------------------------------------------------------------------
-    # TÍTULO DA SELEÇÃO E INJEÇÕES (Abaixo do 2o Separador)
+    # TÍTULO DA SELEÇÃO E INJEÇÕES
     # -------------------------------------------------------------------
     if st.session_state.modo_vista == "🌍 Seleção Nacional" and len(df_filtrado) > 0:
         grupo_emblema = df_filtrado['Grupo'].iloc[0] if tem_texto_valido(df_filtrado['Grupo'].iloc[0]) else ""
@@ -284,10 +278,11 @@ else:
             jogadores_com_foto.insert(0, cromo_clube)
 
     # -------------------------------------------------------------------
-    # CSS DINÂMICO E GRELHA DE CROMOS (Mantido)
+    # CSS DINÂMICO E GRELHA DE CROMOS (AGORA COM VERSÃO TELEMÓVEL!)
     # -------------------------------------------------------------------
     css_grid = """
     <style>
+    /* COMPORTAMENTO BASE PARA COMPUTADOR (DESKTOP) */
     .grid-container {
         display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 10px 0;
     }
@@ -318,6 +313,25 @@ else:
     .cromo-info h4 { margin: 0 0 8px 0; font-size: 1.1rem; }
     .cromo-info p { margin: 2px 0; font-size: 0.9rem; line-height: 1.4; }
     
+    /* COMPORTAMENTO RESPONSIVO PARA TELEMÓVEL (Ecrãs com menos de 600px) */
+    @media (max-width: 600px) {
+        .grid-container {
+            grid-template-columns: repeat(2, 1fr); /* Força a grelha a ter exatamente 2 colunas */
+            gap: 12px; /* Reduz o espaço morto entre os cromos */
+        }
+        .cromo-info h4 { font-size: 0.95rem; margin-bottom: 4px; }
+        .cromo-info p { font-size: 0.75rem; margin: 1px 0; line-height: 1.2; }
+        .cromo-badge { font-size: 20px; padding: 5px; right: 4px; top: 4px; }
+        
+        /* Ajusta o tamanho da carta de estatísticas do clube */
+        .card-clube { padding: 10px; }
+        .card-clube img { width: 70px; height: 70px; margin-bottom: 10px; }
+        .card-clube-nome { font-size: 1rem; margin-bottom: 8px; }
+        .card-clube-stats { font-size: 0.8rem; }
+        .card-clube-stats span { font-size: 1.5rem; }
+    }
+
+    /* CSS DA TABELA */
     .tabela-faltantes {
         width: 100%; border-collapse: collapse; margin-top: 10px; font-family: sans-serif; font-size: 0.9rem;
     }
@@ -388,14 +402,14 @@ else:
     html_cards += '</div>' 
     st.markdown(css_grid + html_cards, unsafe_allow_html=True)
     
-    # --- TABELA DOS FALTANTES (Mantido) ---
+    # --- TABELA DOS FALTANTES ---
     if jogadores_sem_foto:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.subheader("📋 Restantes Jogadores Inscritos")
         
         col_contexto_label = "Clube" if st.session_state.modo_vista == "🌍 Seleção Nacional" else "Seleção"
         
-        html_tabela = f"<table class='tabela-faltantes'><thead><tr><th>Posição</th><th>Nome do Jogador</th><th>{col_contexto_label}</th><th>Idade</th><th>Caps</th><th>Valor</th></tr></thead><tbody>"
+        html_tabela = f"<div style='overflow-x:auto;'><table class='tabela-faltantes'><thead><tr><th>Posição</th><th>Nome do Jogador</th><th>{col_contexto_label}</th><th>Idade</th><th>Caps</th><th>Valor</th></tr></thead><tbody>"
         
         for p_row in jogadores_sem_foto:
             tag_nome = " ⭐" if tem_texto_valido(p_row.get('Estrela da Equipa')) else (" ⚡" if tem_texto_valido(p_row.get('Surpresa')) else "")
@@ -418,12 +432,12 @@ else:
             
             html_tabela += f"<tr><td><strong>{p_row['Posição']}</strong></td><td>{nome_com_tag}</td><td>{contexto_txt}</td><td>{idade_txt}</td><td>{caps_txt}</td><td>{valor_txt}</td></tr>"
             
-        html_tabela += "</tbody></table>"
+        html_tabela += "</tbody></table></div>"
         st.markdown(html_tabela, unsafe_allow_html=True)
         
     st.markdown("---")
 
-    # --- SECÇÕES DE ANÁLISE (Mantido) ---
+    # --- SECÇÕES DE ANÁLISE ---
     st.header(f"📊 Relatório de Análise: {escolha_principal}")
     col_estrelas, col_surpresas = st.columns(2)
     
