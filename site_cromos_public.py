@@ -157,7 +157,6 @@ else:
     def navegar_para_pais(pais_escolhido):
         st.session_state.modo_vista = "🌍 Seleção Nacional"
         st.session_state.selecao_escolhida = pais_escolhido
-        st.rerun() # Garante a atualização imediata
 
 
     # ===================================================================
