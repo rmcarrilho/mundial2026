@@ -8,14 +8,10 @@ import urllib.parse
 # 1. Configurar a página do website
 st.set_page_config(page_title="Mundial 2026", layout="wide")
 
-# --- O TRUQUE DE PROGRAMADOR: CAMINHOS DINÂMICOS ---
-# 1. Descobre automaticamente qual é a pasta onde este ficheiro (.py) está guardado
+# --- CAMINHOS DINÂMICOS ---
 PASTA_BASE = os.path.dirname(os.path.abspath(__file__))
-
-# 2. Cola o nome da pasta de imagens e da base de dados ao caminho que descobriu
 PASTA_IMAGENS = os.path.join(PASTA_BASE, 'imagens')
 FICHEIRO_DB = os.path.join(PASTA_BASE, 'mundial2026.db')
-
 
 def get_image_base64(caminho_imagem):
     with open(caminho_imagem, "rb") as image_file:
@@ -117,7 +113,7 @@ else:
 
 
     # -------------------------------------------------------------------
-    # CSS GLOBAL E INJEÇÕES (Com design responsivo para telemóvel)
+    # CSS GLOBAL E INJEÇÕES
     # -------------------------------------------------------------------
     st.markdown("""
     <style>
@@ -163,85 +159,59 @@ else:
     def navegar_para_pais(pais_escolhido):
         st.session_state.modo_vista = "🌍 Seleção Nacional"
         st.session_state.selecao_escolhida = pais_escolhido
-        # st.rerun() REMOVIDO DAQUI PARA EVITAR O ERRO NA NUVEM!
-
 
     # ===================================================================
-    # ESTRUTURA COLUNAS PRINCIPAIS DO TOPO
+    # TOPO (Título, Explorador e Filtros)
     # ===================================================================
-    left_main_content, right_logo_section = st.columns([10, 6]) 
+    st.markdown(f"<h1 style='margin-top:5px; margin-bottom:20px;'>Mundial 2026</h1>", unsafe_allow_html=True)
 
-    with left_main_content:
-        # 1. TÍTULO
-        st.markdown(f"<h1 style='margin-top:5px; margin-bottom:20px;'>Mundial 2026</h1>", unsafe_allow_html=True)
+    df_grupos = df[['Grupo', 'Seleção']].drop_duplicates().dropna()
+    df_grupos = df_grupos[df_grupos['Grupo'].str.startswith('Grupo')]
+    grupos_unicos = sorted(df_grupos['Grupo'].unique())
 
-        # 2. EXPLORADOR 
-        df_grupos = df[['Grupo', 'Seleção']].drop_duplicates().dropna()
-        df_grupos = df_grupos[df_grupos['Grupo'].str.startswith('Grupo')]
-        grupos_unicos = sorted(df_grupos['Grupo'].unique())
+    if grupos_unicos and st.session_state.modo_vista == "🌍 Seleção Nacional":
+        with st.expander("🗺️ Explorar Grupos do Mundial", expanded=False):
+            cols_exp = st.columns(6)
+            for i, grp in enumerate(grupos_unicos):
+                col_idx = i % 6
+                paises_grupo = df_grupos[df_grupos['Grupo'] == grp]['Seleção'].tolist()
+                with cols_exp[col_idx]:
+                    st.markdown(f"<div class='titulo-grupo-compacto'>{grp}</div>", unsafe_allow_html=True)
+                    for pais in paises_grupo:
+                        st.button(pais, key=f"btn_{grp}_{pais}", on_click=navegar_para_pais, args=(pais,), type="tertiary", use_container_width=True)
 
-        if grupos_unicos and st.session_state.modo_vista == "🌍 Seleção Nacional":
-            with st.expander("🗺️ Explorar Grupos do Mundial", expanded=False):
-                cols_exp = st.columns(6)
-                for i, grp in enumerate(grupos_unicos):
-                    col_idx = i % 6
-                    paises_grupo = df_grupos[df_grupos['Grupo'] == grp]['Seleção'].tolist()
-                    with cols_exp[col_idx]:
-                        st.markdown(f"<div class='titulo-grupo-compacto'>{grp}</div>", unsafe_allow_html=True)
-                        for pais in paises_grupo:
-                            st.button(pais, key=f"btn_{grp}_{pais}", on_click=navegar_para_pais, args=(pais,), type="tertiary", use_container_width=True)
+    st.markdown("---")
 
-        # 3. PRIMEIRO SEPARADOR 
-        st.markdown("---")
+    col_menu1, col_menu2 = st.columns([1.5, 2]) 
+    
+    with col_menu1:
+        st.radio("Organizar a coleção por:", ["🌍 Seleção Nacional", "⚽ Clube / Equipa"], key="modo_vista")
 
-        # 4. CONTROLOS DE FILTRO 
-        col_menu1, col_menu2 = st.columns([1.5, 2]) 
-        
-        with col_menu1:
-            st.radio("Organizar a coleção por:", ["🌍 Seleção Nacional", "⚽ Clube / Equipa"], key="modo_vista")
-
-        with col_menu2:
-            if st.session_state.modo_vista == "🌍 Seleção Nacional":
-                coluna_filtro = 'Seleção'
-                label_dropdown = "Escolhe a Seleção:"
-                opcoes_filtro = sorted(df[coluna_filtro].dropna().unique())
-                
-                if st.session_state.selecao_escolhida in opcoes_filtro:
-                    idx_padrao = opcoes_filtro.index(st.session_state.selecao_escolhida)
-                elif "Portugal" in opcoes_filtro:
-                    idx_padrao = opcoes_filtro.index("Portugal")
-                else:
-                    idx_padrao = 0
-                st.selectbox(label_dropdown, opcoes_filtro, index=idx_padrao, key="selecao_escolhida")
+    with col_menu2:
+        if st.session_state.modo_vista == "🌍 Seleção Nacional":
+            coluna_filtro = 'Seleção'
+            label_dropdown = "Escolhe a Seleção:"
+            opcoes_filtro = sorted(df[coluna_filtro].dropna().unique())
+            
+            if st.session_state.selecao_escolhida in opcoes_filtro:
+                idx_padrao = opcoes_filtro.index(st.session_state.selecao_escolhida)
+            elif "Portugal" in opcoes_filtro:
+                idx_padrao = opcoes_filtro.index("Portugal")
             else:
-                coluna_filtro = 'Clube'
-                label_dropdown = "Escolhe o Clube:"
-                opcoes_filtro = df[coluna_filtro].value_counts().index.tolist()
-                
-                if st.session_state.clube_escolhido in opcoes_filtro:
-                    idx_padrao_clube = opcoes_filtro.index(st.session_state.clube_escolhido)
-                else:
-                    idx_padrao_clube = 0
-                st.selectbox(label_dropdown, opcoes_filtro, index=idx_padrao_clube, key="clube_escolhido")
+                idx_padrao = 0
+            st.selectbox(label_dropdown, opcoes_filtro, index=idx_padrao, key="selecao_escolhida")
+        else:
+            coluna_filtro = 'Clube'
+            label_dropdown = "Escolhe o Clube:"
+            opcoes_filtro = df[coluna_filtro].value_counts().index.tolist()
+            
+            if st.session_state.clube_escolhido in opcoes_filtro:
+                idx_padrao_clube = opcoes_filtro.index(st.session_state.clube_escolhido)
+            else:
+                idx_padrao_clube = 0
+            st.selectbox(label_dropdown, opcoes_filtro, index=idx_padrao_clube, key="clube_escolhido")
 
-        # 5. SEGUNDO SEPARADOR 
-        st.markdown("---")
-
-    with right_logo_section:
-        # -------------------------------------------------------------------
-        # IMAGEM 9.PNG
-        # -------------------------------------------------------------------
-        caminho_logo = os.path.join(PASTA_IMAGENS, '9.png')
-        if os.path.exists(caminho_logo):
-            logo_b64 = get_image_base64(caminho_logo)
-            st.markdown(f"""
-            <div style="
-                display: flex; justify-content: flex-end; align-items: flex-start;
-                height: 100%; margin-top: 15px; padding-right: 20px;
-            ">
-                <img src="{logo_b64}" style="max-height: 120px; width: auto; object-fit: contain;">
-            </div>
-            """, unsafe_allow_html=True)
+    st.markdown("---")
     # ===================================================================
 
 
@@ -283,11 +253,11 @@ else:
             jogadores_com_foto.insert(0, cromo_clube)
 
     # -------------------------------------------------------------------
-    # CSS DINÂMICO E GRELHA DE CROMOS (AGORA COM VERSÃO TELEMÓVEL!)
+    # CSS DINÂMICO E GRELHA DE CROMOS 
     # -------------------------------------------------------------------
     css_grid = """
     <style>
-    /* COMPORTAMENTO BASE PARA COMPUTADOR (DESKTOP) */
+    /* COMPORTAMENTO BASE PARA COMPUTADOR */
     .grid-container {
         display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 10px 0;
     }
@@ -318,17 +288,16 @@ else:
     .cromo-info h4 { margin: 0 0 8px 0; font-size: 1.1rem; }
     .cromo-info p { margin: 2px 0; font-size: 0.9rem; line-height: 1.4; }
     
-    /* COMPORTAMENTO RESPONSIVO PARA TELEMÓVEL (Ecrãs com menos de 600px) */
+    /* COMPORTAMENTO RESPONSIVO PARA TELEMÓVEL */
     @media (max-width: 600px) {
         .grid-container {
-            grid-template-columns: repeat(2, 1fr); /* Força a grelha a ter exatamente 2 colunas */
-            gap: 12px; /* Reduz o espaço morto entre os cromos */
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
         }
         .cromo-info h4 { font-size: 0.95rem; margin-bottom: 4px; }
         .cromo-info p { font-size: 0.75rem; margin: 1px 0; line-height: 1.2; }
         .cromo-badge { font-size: 20px; padding: 5px; right: 4px; top: 4px; }
         
-        /* Ajusta o tamanho da carta de estatísticas do clube */
         .card-clube { padding: 10px; }
         .card-clube img { width: 70px; height: 70px; margin-bottom: 10px; }
         .card-clube-nome { font-size: 1rem; margin-bottom: 8px; }
